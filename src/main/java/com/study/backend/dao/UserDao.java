@@ -1,11 +1,16 @@
 package com.study.backend.dao;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
+
+import javax.servlet.http.HttpSession;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import com.study.backend.dto.UserDto;
@@ -21,7 +26,6 @@ public class UserDao implements IUserDao {
 	
 	@Override
 	public HashMap<String, UserResponse> registration(HashMap<String, UserDto> user) {
-		
 		final String sql = "INSERT INTO users (email, token, username, password, bio) values (?, ?, ?, ?, ?)";
 		
 		int result = jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -50,5 +54,31 @@ public class UserDao implements IUserDao {
 		}
 		
 		return null;
+	}
+	
+	@Override
+	public HashMap<String, UserResponse> authentication(HashMap<String, UserDto> user, HttpSession httpSession) {
+		HashMap<String, UserResponse> response = new HashMap<>();
+		final String sql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
+		
+		List<UserResponse> users = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+			@Override
+			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				UserResponse userResponse = new UserResponse();
+				
+				userResponse.setEmail(resultSet.getString("email"));
+				userResponse.setToken(resultSet.getString("token"));
+				userResponse.setUsername(resultSet.getString("username"));
+				userResponse.setBio(resultSet.getString("bio"));
+				userResponse.setImage(resultSet.getString("image"));
+				
+				return userResponse;
+			}
+		}, user.get("user").getEmail(), user.get("user").getPassword());
+		
+		response.put("user", users.get(0));
+		httpSession.setAttribute("Token", users.get(0).getToken());
+		
+		return response;
 	}
 }

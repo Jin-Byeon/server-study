@@ -2,6 +2,8 @@ package com.study.backend.controller;
 
 import java.util.HashMap;
 
+import javax.servlet.http.HttpSession;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -13,7 +15,7 @@ import com.study.backend.dto.UserResponse;
 import com.study.backend.service.UserService;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping(value = "/api", produces = "application/json; charset=utf-8")
 public class UserController {
 	private UserService userService;
 	
@@ -27,5 +29,10 @@ public class UserController {
 		user.get("user").setBio("I work at statefarm");
 		
 		return userService.registration(user);
+	}
+	
+	@PostMapping("/users/login")
+	public HashMap<String, UserResponse> authentication(@RequestBody HashMap<String, UserDto> user, HttpSession httpSession) {
+		return userService.authentication(user, httpSession);
 	}
 }
