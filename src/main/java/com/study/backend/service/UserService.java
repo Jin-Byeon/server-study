@@ -19,12 +19,17 @@ public class UserService implements IUserService {
 	}
 	
 	@Override
-	public HashMap<String, UserResponse> registration(HashMap<String, UserDto> user) {
-		return userDao.registration(user);
+	public HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user) {
+		return userDao.registrate(user);
 	}
 	
 	@Override
-	public HashMap<String, UserResponse> authentication(HashMap<String, UserDto> user, HttpSession httpSession) {
-		return userDao.authentication(user, httpSession);
+	public HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession) {
+		return userDao.authenticate(user, httpSession);
+	}
+	
+	@Override
+	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
+		return userDao.getCurrentUser(httpSession);
 	}
 }

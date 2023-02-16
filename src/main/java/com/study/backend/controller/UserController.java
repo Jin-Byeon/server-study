@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -24,15 +25,20 @@ public class UserController {
 	}
 	
 	@PostMapping("/users")
-	public HashMap<String, UserResponse> registration(@RequestHeader("Authorization") String token, @RequestBody HashMap<String, UserDto> user) {
+	public HashMap<String, UserResponse> registrate(@RequestHeader("Authorization") String token, @RequestBody HashMap<String, UserDto> user) {
 		user.get("user").setToken(token);
 		user.get("user").setBio("I work at statefarm");
 		
-		return userService.registration(user);
+		return userService.registrate(user);
 	}
 	
 	@PostMapping("/users/login")
-	public HashMap<String, UserResponse> authentication(@RequestBody HashMap<String, UserDto> user, HttpSession httpSession) {
-		return userService.authentication(user, httpSession);
+	public HashMap<String, UserResponse> authenticate(@RequestBody HashMap<String, UserDto> user, HttpSession httpSession) {
+		return userService.authenticate(user, httpSession);
+	}
+	
+	@GetMapping("/user")
+	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
+		return userService.getCurrentUser(httpSession);
 	}
 }

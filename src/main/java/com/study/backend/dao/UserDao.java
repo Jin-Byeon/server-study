@@ -25,7 +25,7 @@ public class UserDao implements IUserDao {
 	}
 	
 	@Override
-	public HashMap<String, UserResponse> registration(HashMap<String, UserDto> user) {
+	public HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user) {
 		final String sql = "INSERT INTO users (email, token, username, password, bio) values (?, ?, ?, ?, ?)";
 		
 		int result = jdbcTemplate.update(sql, new PreparedStatementSetter() {
@@ -57,7 +57,7 @@ public class UserDao implements IUserDao {
 	}
 	
 	@Override
-	public HashMap<String, UserResponse> authentication(HashMap<String, UserDto> user, HttpSession httpSession) {
+	public HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession) {
 		HashMap<String, UserResponse> response = new HashMap<>();
 		final String sql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
 		
@@ -78,6 +78,31 @@ public class UserDao implements IUserDao {
 		
 		response.put("user", users.get(0));
 		httpSession.setAttribute("Token", users.get(0).getToken());
+		
+		return response;
+	}
+	
+	@Override
+	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
+		HashMap<String, UserResponse> response = new HashMap<>();
+		final String sql = "SELECT email, token, username, bio, image FROM users WHERE token = ?";
+		
+		List<UserResponse> users = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+			@Override
+			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				UserResponse userResponse = new UserResponse();
+				
+				userResponse.setEmail(resultSet.getString("email"));
+				userResponse.setToken(resultSet.getString("token"));
+				userResponse.setUsername(resultSet.getString("username"));
+				userResponse.setBio(resultSet.getString("bio"));
+				userResponse.setImage(resultSet.getString("image"));
+				
+				return userResponse;
+			}
+		}, httpSession.getAttribute("Token"));
+		
+		response.put("user", users.get(0));
 		
 		return response;
 	}
