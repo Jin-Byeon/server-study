@@ -30,12 +30,12 @@ public class UserDao implements IUserDao {
 		
 		int result = jdbcTemplate.update(sql, new PreparedStatementSetter() {
 				@Override
-				public void setValues(PreparedStatement pstmt) throws SQLException {
-					pstmt.setString(1, user.get("user").getEmail());
-					pstmt.setString(2, user.get("user").getToken());
-					pstmt.setString(3, user.get("user").getUsername());
-					pstmt.setString(4, user.get("user").getPassword());
-					pstmt.setString(5, user.get("user").getBio());
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, user.get("user").getEmail());
+					preparedStatement.setString(2, user.get("user").getToken());
+					preparedStatement.setString(3, user.get("user").getUsername());
+					preparedStatement.setString(4, user.get("user").getPassword());
+					preparedStatement.setString(5, user.get("user").getBio());
 				}
 		});
 		
@@ -61,7 +61,7 @@ public class UserDao implements IUserDao {
 		HashMap<String, UserResponse> response = new HashMap<>();
 		final String sql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
 		
-		List<UserResponse> users = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+		List<UserResponse> result = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -76,8 +76,8 @@ public class UserDao implements IUserDao {
 			}
 		}, user.get("user").getEmail(), user.get("user").getPassword());
 		
-		response.put("user", users.get(0));
-		httpSession.setAttribute("Token", users.get(0).getToken());
+		response.put("user", result.get(0));
+		httpSession.setAttribute("Token", result.get(0).getToken());
 		
 		return response;
 	}
@@ -87,7 +87,7 @@ public class UserDao implements IUserDao {
 		HashMap<String, UserResponse> response = new HashMap<>();
 		final String sql = "SELECT email, token, username, bio, image FROM users WHERE token = ?";
 		
-		List<UserResponse> users = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+		List<UserResponse> result = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -102,8 +102,80 @@ public class UserDao implements IUserDao {
 			}
 		}, httpSession.getAttribute("Token"));
 		
-		response.put("user", users.get(0));
+		response.put("user", result.get(0));
 		
 		return response;
+	}
+	
+	@Override
+	public HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession) {
+		UserDto updateUser = new UserDto();
+		final String selectSql = "SELECT email, password, username, bio, image FROM users WHERE token = ?";
+		final String updateSql = "UPDATE users SET email = ?, username = ?, password = ?, bio = ?, image = ? WHERE token = ?";
+		
+		List<UserDto> selectResult = jdbcTemplate.query(selectSql, new RowMapper<UserDto>() {
+			@Override
+			public UserDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				UserDto userDto = new UserDto();
+				
+				userDto.setEmail(resultSet.getString("email"));
+				userDto.setPassword(resultSet.getString("password"));
+				userDto.setUsername(resultSet.getString("username"));
+				userDto.setBio(resultSet.getString("bio"));
+				userDto.setImage(resultSet.getString("image"));
+				
+				return userDto;
+			}
+		}, httpSession.getAttribute("Token"));
+		
+		updateUser.setEmail(selectResult.get(0).getEmail());
+		updateUser.setPassword(selectResult.get(0).getPassword());
+		updateUser.setUsername(selectResult.get(0).getUsername());
+		updateUser.setBio(selectResult.get(0).getBio());
+		updateUser.setImage(selectResult.get(0).getImage());
+		
+		if (user.get("user").getEmail() != null) {
+			updateUser.setEmail(user.get("user").getEmail());
+		}
+		if (user.get("user").getPassword() != null) {
+			updateUser.setPassword(user.get("user").getPassword());
+		}
+		if (user.get("user").getUsername() != null) {
+			updateUser.setUsername(user.get("user").getUsername());
+		}
+		if (user.get("user").getBio() != null) {
+			updateUser.setBio(user.get("user").getBio());
+		}
+		if (user.get("user").getImage() != null) {
+			updateUser.setImage(user.get("user").getImage());
+		}
+		
+		int updateResult = jdbcTemplate.update(updateSql, new PreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement preparedStatement) throws SQLException {
+				preparedStatement.setString(1, updateUser.getEmail());
+				preparedStatement.setString(2, updateUser.getPassword());
+				preparedStatement.setString(3, updateUser.getUsername());
+				preparedStatement.setString(4, updateUser.getBio());
+				preparedStatement.setString(5, updateUser.getImage());
+				preparedStatement.setString(6, (String) httpSession.getAttribute("Token"));
+			}
+		});
+		
+		if (updateResult == 1) {
+			HashMap<String, UserResponse> response = new HashMap<>();
+			UserResponse userResponse = new UserResponse();
+			
+			userResponse.setEmail(updateUser.getEmail());
+			userResponse.setToken((String) httpSession.getAttribute("Token"));
+			userResponse.setUsername(updateUser.getUsername());
+			userResponse.setBio(updateUser.getBio());
+			userResponse.setImage(updateUser.getImage());
+			response.put("user", userResponse);
+			
+			return response;
+		}
+		
+		return null;
 	}
 }

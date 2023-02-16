@@ -32,4 +32,9 @@ public class UserService implements IUserService {
 	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
 		return userDao.getCurrentUser(httpSession);
 	}
+	
+	@Override
+	public HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession) {
+		return userDao.updateUser(user, httpSession);
+	}
 }

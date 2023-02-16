@@ -6,6 +6,7 @@ import javax.servlet.http.HttpSession;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,5 +41,10 @@ public class UserController {
 	@GetMapping("/user")
 	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
 		return userService.getCurrentUser(httpSession);
+	}
+	
+	@PutMapping("/user")
+	public HashMap<String, UserResponse> updateUser(@RequestBody HashMap<String, UserDto> user, HttpSession httpSession) {
+		return userService.updateUser(user, httpSession);
 	}
 }

@@ -11,4 +11,5 @@ public interface IUserDao {
 	HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user);
 	HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession);
 	HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession);
+	HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession);
 }
