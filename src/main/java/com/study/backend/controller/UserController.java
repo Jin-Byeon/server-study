@@ -19,7 +19,7 @@ import com.study.backend.service.UserService;
 @RestController
 @RequestMapping(value = "/api", produces = "application/json; charset=utf-8")
 public class UserController {
-	private UserService userService;
+	private final UserService userService;
 	
 	public UserController(UserService userService) {
 		this.userService = userService;

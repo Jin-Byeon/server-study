@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.servlet.http.HttpSession;
 
@@ -18,7 +17,7 @@ import com.study.backend.dto.UserResponse;
 
 @Repository
 public class UserDao implements IUserDao {
-	private JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 	
 	public UserDao(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -61,7 +60,7 @@ public class UserDao implements IUserDao {
 		HashMap<String, UserResponse> response = new HashMap<>();
 		final String sql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
 		
-		List<UserResponse> result = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+		UserResponse result = jdbcTemplate.queryForObject(sql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -76,8 +75,8 @@ public class UserDao implements IUserDao {
 			}
 		}, user.get("user").getEmail(), user.get("user").getPassword());
 		
-		response.put("user", result.get(0));
-		httpSession.setAttribute("Token", result.get(0).getToken());
+		response.put("user", result);
+		httpSession.setAttribute("Token", result.getToken());
 		
 		return response;
 	}
@@ -87,7 +86,7 @@ public class UserDao implements IUserDao {
 		HashMap<String, UserResponse> response = new HashMap<>();
 		final String sql = "SELECT email, token, username, bio, image FROM users WHERE token = ?";
 		
-		List<UserResponse> result = jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
+		UserResponse result = jdbcTemplate.queryForObject(sql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -102,7 +101,7 @@ public class UserDao implements IUserDao {
 			}
 		}, httpSession.getAttribute("Token"));
 		
-		response.put("user", result.get(0));
+		response.put("user", result);
 		
 		return response;
 	}
@@ -111,9 +110,9 @@ public class UserDao implements IUserDao {
 	public HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession) {
 		UserDto updateUser = new UserDto();
 		final String selectSql = "SELECT email, password, username, bio, image FROM users WHERE token = ?";
-		final String updateSql = "UPDATE users SET email = ?, username = ?, password = ?, bio = ?, image = ? WHERE token = ?";
+		final String updateSql = "UPDATE users SET email = ?, password = ?, username = ?, bio = ?, image = ? WHERE token = ?";
 		
-		List<UserDto> selectResult = jdbcTemplate.query(selectSql, new RowMapper<UserDto>() {
+		UserDto selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<UserDto>() {
 			@Override
 			public UserDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserDto userDto = new UserDto();
@@ -128,11 +127,11 @@ public class UserDao implements IUserDao {
 			}
 		}, httpSession.getAttribute("Token"));
 		
-		updateUser.setEmail(selectResult.get(0).getEmail());
-		updateUser.setPassword(selectResult.get(0).getPassword());
-		updateUser.setUsername(selectResult.get(0).getUsername());
-		updateUser.setBio(selectResult.get(0).getBio());
-		updateUser.setImage(selectResult.get(0).getImage());
+		updateUser.setEmail(selectResult.getEmail());
+		updateUser.setPassword(selectResult.getPassword());
+		updateUser.setUsername(selectResult.getUsername());
+		updateUser.setBio(selectResult.getBio());
+		updateUser.setImage(selectResult.getImage());
 		
 		if (user.get("user").getEmail() != null) {
 			updateUser.setEmail(user.get("user").getEmail());

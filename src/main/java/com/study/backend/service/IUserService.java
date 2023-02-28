@@ -8,8 +8,8 @@ import com.study.backend.dto.UserDto;
 import com.study.backend.dto.UserResponse;
 
 public interface IUserService {
-	HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user);
-	HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession);
-	HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession);
-	HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession);
+	public HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user);
+	public HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession);
+	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession);
+	public HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession);
 }

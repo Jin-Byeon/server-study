@@ -7,6 +7,7 @@ public class UserDto {
 	private String username;
 	private String bio;
 	private String image;
+	private boolean follwing;
 	
 	public String getEmail() {
 		return email;
@@ -43,5 +44,11 @@ public class UserDto {
 	}
 	public void setImage(String image) {
 		this.image = image;
+	}
+	public boolean isFollwing() {
+		return follwing;
+	}
+	public void setFollwing(boolean follwing) {
+		this.follwing = follwing;
 	}
 }

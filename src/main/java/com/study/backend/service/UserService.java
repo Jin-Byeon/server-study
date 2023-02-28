@@ -12,7 +12,7 @@ import com.study.backend.dto.UserResponse;
 
 @Service
 public class UserService implements IUserService {
-	private UserDao userDao;
+	private final UserDao userDao;
 	
 	public UserService(UserDao userDao) {
 		this.userDao = userDao;
