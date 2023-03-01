@@ -26,4 +26,9 @@ public class ProfileService implements IProfileService {
 	public HashMap<String, ProfileResponse> followUser(String username, HttpSession httpSession) {
 		return profileDao.followUser(username, httpSession);
 	}
+	
+	@Override
+	public HashMap<String, ProfileResponse> unfollowUser(String username, HttpSession httpSession) {
+		return profileDao.unfollowUser(username, httpSession);
+	}
 }

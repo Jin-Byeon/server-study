@@ -17,16 +17,26 @@ import com.study.backend.dto.ProfileResponse;
 @Repository
 public class ProfileDao implements IProfileDao {
 	private final JdbcTemplate jdbcTemplate;
+	private final String getCurrentUsernameSql = "SELECT username FROM users WHERE token = ?";
+	private final String followAndUnfollowSql = "MERGE INTO follow USING dual ON (username = ? AND follow_username = ?) WHEN MATCHED THEN UPDATE SET following = ? WHEN NOT MATCHED THEN INSERT (username, follow_username, following) VALUES (?, ? ,?)";
 	
 	public ProfileDao(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
+	}
+	
+	public String getCurrentUsername(HttpSession httpSession) {
+		return jdbcTemplate.queryForObject(getCurrentUsernameSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("username");
+			}
+		}, httpSession.getAttribute("Token"));
 	}
 
 	@Override
 	public HashMap<String, ProfileResponse> getProfile(String username, HttpSession httpSession) {
 		HashMap<String, ProfileResponse> response = new HashMap<>();
 		ProfileResponse selectResult = new ProfileResponse();
-		final String usernameSql = "SELECT username FROM users WHERE token = ?";
 		final String selectSql = "SELECT username, bio, image FROM users WHERE username = ?";
 		final String selectJoinSql = "SELECT users.username, users.bio, users.image, follow.following FROM users LEFT JOIN follow ON users.username = follow.follow_username AND follow.username = ? WHERE users.username = ?";
 		
@@ -47,12 +57,7 @@ public class ProfileDao implements IProfileDao {
 		}
 		
 		if (httpSession.getAttribute("Token") != null) {
-			String usernameResult = jdbcTemplate.queryForObject(usernameSql, new RowMapper<String>() {
-				@Override
-				public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
-					return resultSet.getString("username");
-				}
-			}, httpSession.getAttribute("Token"));
+			String currentUsername = getCurrentUsername(httpSession);
 			
 			selectResult = jdbcTemplate.queryForObject(selectJoinSql, new RowMapper<ProfileResponse>() {
 				@Override
@@ -73,7 +78,7 @@ public class ProfileDao implements IProfileDao {
 						
 					return profileResponse;
 				}
-			}, usernameResult, username);
+			}, currentUsername, username);
 		}
 		
 		response.put("profile", selectResult);
@@ -83,25 +88,40 @@ public class ProfileDao implements IProfileDao {
 	
 	@Override
 	public HashMap<String, ProfileResponse> followUser(String username, HttpSession httpSession) {
-		final String selectSql = "SELECT username FROM users WHERE token = ?";
-		final String updateSql = "MERGE INTO follow USING dual ON (username = ? AND follow_username = ?) WHEN MATCHED THEN UPDATE SET following = ? WHEN NOT MATCHED THEN INSERT (username, follow_username, following) VALUES (?, ? ,?)";
+		String currentUsername = getCurrentUsername(httpSession);
 		
-		String selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<String>() {
-			@Override
-			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
-				return resultSet.getString("username");
-			}
-		}, httpSession.getAttribute("Token"));
-		
-		int updateResult = jdbcTemplate.update(updateSql, new PreparedStatementSetter() {
+		int updateResult = jdbcTemplate.update(followAndUnfollowSql, new PreparedStatementSetter() {
 			@Override
 			public void setValues(PreparedStatement preparedStatement) throws SQLException {
-				preparedStatement.setString(1, selectResult);
+				preparedStatement.setString(1, currentUsername);
 				preparedStatement.setString(2, username);
 				preparedStatement.setInt(3, 1);
-				preparedStatement.setString(4, selectResult);
+				preparedStatement.setString(4, currentUsername);
 				preparedStatement.setString(5, username);
 				preparedStatement.setInt(6, 1);	
+			}
+		});
+		
+		if (updateResult == 1) {
+			return getProfile(username, httpSession);
+		}
+		
+		return null;
+	}
+	
+	@Override
+	public HashMap<String, ProfileResponse> unfollowUser(String username, HttpSession httpSession) {
+		String currentUsername = getCurrentUsername(httpSession);
+		
+		int updateResult = jdbcTemplate.update(followAndUnfollowSql, new PreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement preparedStatement) throws SQLException {
+				preparedStatement.setString(1, currentUsername);
+				preparedStatement.setString(2, username);
+				preparedStatement.setInt(3, 0);
+				preparedStatement.setString(4, currentUsername);
+				preparedStatement.setString(5, username);
+				preparedStatement.setInt(6, 0);	
 			}
 		});
 		

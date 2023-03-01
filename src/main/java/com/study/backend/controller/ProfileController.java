@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,5 +31,10 @@ public class ProfileController {
 	@PostMapping("/profiles/{username}/follow")
 	public HashMap<String, ProfileResponse> followUser(@PathVariable String username, HttpSession httpSession) {
 		return profileService.followUser(username, httpSession);
+	}
+	
+	@DeleteMapping("/profiles/{username}/follow")
+	public HashMap<String, ProfileResponse> unfollowUser(@PathVariable String username, HttpSession httpSession) {
+		return profileService.unfollowUser(username, httpSession);
 	}
 }
