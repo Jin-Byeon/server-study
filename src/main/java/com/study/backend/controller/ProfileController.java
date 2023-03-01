@@ -2,8 +2,11 @@ package com.study.backend.controller;
 
 import java.util.HashMap;
 
+import javax.servlet.http.HttpSession;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,8 +23,12 @@ public class ProfileController {
 	}
 	
 	@GetMapping("/profiles/{username}")
-	public HashMap<String, ProfileResponse> getProfile(@PathVariable String username) {
-		return profileService.getProfile(username);
+	public HashMap<String, ProfileResponse> getProfile(@PathVariable String username, HttpSession httpSession) {
+		return profileService.getProfile(username, httpSession);
 	}
 	
+	@PostMapping("/profiles/{username}/follow")
+	public HashMap<String, ProfileResponse> followUser(@PathVariable String username, HttpSession httpSession) {
+		return profileService.followUser(username, httpSession);
+	}
 }
