@@ -1,11 +1,19 @@
 package com.study.backend.dto;
 
+import javax.validation.constraints.Size;
+
 public class UserDto {
+	@Size(max = 100)
 	private String email;
+	@Size(max = 100)
 	private String password;
+	@Size(max = 100)
 	private String token;
+	@Size(max = 100)
 	private String username;
+	@Size(max = 100)
 	private String bio;
+	@Size(max = 100)
 	private String image;
 	private boolean follwing;
 	

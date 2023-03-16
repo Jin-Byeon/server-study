@@ -2,7 +2,7 @@ package com.study.backend.dto;
 
 import javax.validation.constraints.Size;
 
-public class ProfileResponse {
+public class AuthorDto {
 	@Size(max = 100)
 	private String username;
 	@Size(max = 100)

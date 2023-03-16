@@ -25,9 +25,9 @@ public class UserDao implements IUserDao {
 	
 	@Override
 	public HashMap<String, UserResponse> registrate(HashMap<String, UserDto> user) {
-		final String sql = "INSERT INTO users (email, token, username, password, bio) values (?, ?, ?, ?, ?)";
+		final String insertSql = "INSERT INTO users (email, token, username, password, bio) values (?, ?, ?, ?, ?)";
 		
-		int result = jdbcTemplate.update(sql, new PreparedStatementSetter() {
+		int insertResult = jdbcTemplate.update(insertSql, new PreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement preparedStatement) throws SQLException {
 					preparedStatement.setString(1, user.get("user").getEmail());
@@ -38,8 +38,8 @@ public class UserDao implements IUserDao {
 				}
 		});
 		
-		if (result == 1) {
-			HashMap<String, UserResponse> response = new HashMap<>();
+		if (insertResult == 1) {
+			HashMap<String, UserResponse> response = new HashMap<String, UserResponse>();
 			UserResponse userResponse = new UserResponse();
 			
 			userResponse.setEmail(user.get("user").getEmail());
@@ -57,10 +57,10 @@ public class UserDao implements IUserDao {
 	
 	@Override
 	public HashMap<String, UserResponse> authenticate(HashMap<String, UserDto> user, HttpSession httpSession) {
-		HashMap<String, UserResponse> response = new HashMap<>();
-		final String sql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
+		final String selectSql = "SELECT email, token, username, bio, image FROM users WHERE email = ? AND password = ?";
+		HashMap<String, UserResponse> response = new HashMap<String, UserResponse>();
 		
-		UserResponse result = jdbcTemplate.queryForObject(sql, new RowMapper<UserResponse>() {
+		UserResponse selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -75,18 +75,18 @@ public class UserDao implements IUserDao {
 			}
 		}, user.get("user").getEmail(), user.get("user").getPassword());
 		
-		response.put("user", result);
-		httpSession.setAttribute("Token", result.getToken());
+		response.put("user", selectResult);
+		httpSession.setAttribute("Token", selectResult.getToken());
 		
 		return response;
 	}
 	
 	@Override
 	public HashMap<String, UserResponse> getCurrentUser(HttpSession httpSession) {
-		HashMap<String, UserResponse> response = new HashMap<>();
-		final String sql = "SELECT email, token, username, bio, image FROM users WHERE token = ?";
+		final String selectSql = "SELECT email, token, username, bio, image FROM users WHERE token = ?";
+		HashMap<String, UserResponse> response = new HashMap<String, UserResponse>();
 		
-		UserResponse result = jdbcTemplate.queryForObject(sql, new RowMapper<UserResponse>() {
+		UserResponse selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<UserResponse>() {
 			@Override
 			public UserResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				UserResponse userResponse = new UserResponse();
@@ -101,16 +101,16 @@ public class UserDao implements IUserDao {
 			}
 		}, httpSession.getAttribute("Token"));
 		
-		response.put("user", result);
+		response.put("user", selectResult);
 		
 		return response;
 	}
 	
 	@Override
 	public HashMap<String, UserResponse> updateUser(HashMap<String, UserDto> user, HttpSession httpSession) {
-		UserDto updateUser = new UserDto();
 		final String selectSql = "SELECT email, password, username, bio, image FROM users WHERE token = ?";
 		final String updateSql = "UPDATE users SET email = ?, password = ?, username = ?, bio = ?, image = ? WHERE token = ?";
+		UserDto updateUser = new UserDto();
 		
 		UserDto selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<UserDto>() {
 			@Override
@@ -162,7 +162,7 @@ public class UserDao implements IUserDao {
 		});
 		
 		if (updateResult == 1) {
-			HashMap<String, UserResponse> response = new HashMap<>();
+			HashMap<String, UserResponse> response = new HashMap<String, UserResponse>();
 			UserResponse userResponse = new UserResponse();
 			
 			userResponse.setEmail(updateUser.getEmail());

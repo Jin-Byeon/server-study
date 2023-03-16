@@ -35,10 +35,10 @@ public class ProfileDao implements IProfileDao {
 
 	@Override
 	public HashMap<String, ProfileResponse> getProfile(String username, HttpSession httpSession) {
-		HashMap<String, ProfileResponse> response = new HashMap<>();
-		ProfileResponse selectResult = new ProfileResponse();
 		final String selectSql = "SELECT username, bio, image FROM users WHERE username = ?";
 		final String selectJoinSql = "SELECT users.username, users.bio, users.image, follow.following FROM users LEFT JOIN follow ON users.username = follow.follow_username AND follow.username = ? WHERE users.username = ?";
+		HashMap<String, ProfileResponse> response = new HashMap<String, ProfileResponse>();
+		ProfileResponse selectResult = new ProfileResponse();
 		
 		if (httpSession.getAttribute("Token") == null) {
 			selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<ProfileResponse>() {
