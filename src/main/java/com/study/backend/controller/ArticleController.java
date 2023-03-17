@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,5 +39,10 @@ public class ArticleController {
 	@PutMapping("/articles/{slug}")
 	public HashMap<String, ArticleResponse> updateArticle(@PathVariable String slug, @RequestBody HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		return articleService.updateArticle(slug, article, httpSession);
+	}
+	
+	@DeleteMapping("/articles/{slug}")
+	public void deleteArticle(@PathVariable String slug, HttpSession httpSession) {
+		articleService.deleteArticle(slug, httpSession);
 	}
 }

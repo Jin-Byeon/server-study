@@ -74,13 +74,12 @@ public class ArticleDao implements IArticleDao {
 
 	@Override
 	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession) {
-		final String insertTagListSql = "INSERT INTO taglist (tag) VALUES (?)";
 		final String insertTagSql = "INSERT INTO tags (slug, tag) VALUES (?, ?)";
+		final String insertTagListSql = "INSERT INTO taglist (tag) VALUES (?)";
 		final String insertArticleSql = "INSERT INTO article (slug, username, title, description, body, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		String now = LocalDateTime.now().toString();
 		HashMap<String, ArticleResponse> response = new HashMap<String, ArticleResponse>();
 		UserDto currentUser = getCurrentUser(httpSession);
-		List<String> tags = getTags();
 
 		int insertArticleResult = jdbcTemplate.update(insertArticleSql, new PreparedStatementSetter() {
 			@Override
@@ -96,12 +95,21 @@ public class ArticleDao implements IArticleDao {
 		});
 
 		if (article.get("article").getTagList() != null) {
+			List<String> tags = getTags();
 			ArrayList<String> tagList = article.get("article").getTagList();
 			
 			for (int i = 0; i < tagList.size(); i++) {
 				String tag = tagList.get(i);
 
-				if (!tags.contains(tag)) {
+				if (tags.contains(tag)) {
+					jdbcTemplate.update(insertTagSql, new PreparedStatementSetter() {
+						@Override
+						public void setValues(PreparedStatement preparedStatement) throws SQLException {
+							preparedStatement.setString(1, article.get("article").getTitle().replace(" ", "-"));
+							preparedStatement.setString(2, tag);
+						}
+					});
+				} else {
 					int insertTagListResult = jdbcTemplate.update(insertTagListSql, new PreparedStatementSetter() {
 						@Override
 						public void setValues(PreparedStatement preparedStatement) throws SQLException {
@@ -211,7 +219,8 @@ public class ArticleDao implements IArticleDao {
 	@Override
 	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		final String selectSql = "SELECT username, title, description, body FROM article WHERE slug = ?";
-		final String updateSql = "UPDATE article SET slug = ?, title = ?, description = ?, body = ? WHERE slug = ?";
+		final String updateSql = "UPDATE article SET slug = ?, title = ?, description = ?, body = ?, updatedat = ? WHERE slug = ?";
+		String now = LocalDateTime.now().toString();
 		ArticleDto updateArticle = new ArticleDto();
 		UserDto currentUser = getCurrentUser(httpSession);
 		
@@ -251,7 +260,8 @@ public class ArticleDao implements IArticleDao {
 					preparedStatement.setString(2, updateArticle.getTitle());
 					preparedStatement.setString(3, updateArticle.getDescription());
 					preparedStatement.setString(4, updateArticle.getBody());
-					preparedStatement.setString(5, slug);
+					preparedStatement.setString(5, now);
+					preparedStatement.setString(6, slug);
 				}
 			});
 			
@@ -261,5 +271,61 @@ public class ArticleDao implements IArticleDao {
 		}
 		
 		return null;
+	}
+
+	@Override
+	public void deleteArticle(String slug, HttpSession httpSession) {
+		final String selectArticleSql = "SELECT username FROM article WHERE slug = ?";
+		final String selectTagsSql = "SELECT DISTINCT tag FROM tags";
+		final String deleteTagsSql = "DELETE FROM tags WHERE slug = ?";
+		final String deleteArticleSql = "DELETE FROM article WHERE slug = ?";
+		final String deleteTagListSql = "DELETE FROM taglist WHERE tag = ?";
+		UserDto currentUser = getCurrentUser(httpSession);
+	
+		String username = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("username");
+			}
+		}, slug);
+		
+		if (currentUser.getUsername().equals(username)) {
+			int deleteTagsResult = jdbcTemplate.update(deleteTagsSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, slug);
+				}
+			});
+			
+			jdbcTemplate.update(deleteArticleSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, slug);
+				}
+			});
+			
+			if (deleteTagsResult > 0) {
+				List<String> tags = getTags();
+				List<String> tagList = jdbcTemplate.query(selectTagsSql, new RowMapper<String>() {
+					@Override
+					public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+						return resultSet.getString("tag");
+					}
+				});
+				
+				for (int i = 0; i < tags.size(); i++) {
+					String tag = tags.get(i);
+					
+					if (!tagList.contains(tag)) {
+						jdbcTemplate.update(deleteTagListSql, new PreparedStatementSetter() {
+							@Override
+							public void setValues(PreparedStatement preparedStatement) throws SQLException {
+								preparedStatement.setString(1, tag);
+							}
+						});
+					}
+				}
+			}
+		}
 	}
 }

@@ -14,4 +14,5 @@ public interface IArticleDao {
 	HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession);
 	HashMap<String, ArticleResponse> getArticle(String slug);
 	HashMap<String, ArticleResponse> updateArticle(@PathVariable String slug, @RequestBody HashMap<String, ArticleDto> article, HttpSession httpSession);
+	void deleteArticle(@PathVariable String slug, HttpSession httpSession);
 }

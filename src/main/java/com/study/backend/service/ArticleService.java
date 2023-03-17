@@ -32,4 +32,9 @@ public class ArticleService implements IArticleService{
 	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		return articleDao.updateArticle(slug, article, httpSession);
 	}
+
+	@Override
+	public void deleteArticle(String slug, HttpSession httpSession) {
+		articleDao.deleteArticle(slug, httpSession);
+	}
 }
