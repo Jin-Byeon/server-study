@@ -207,4 +207,59 @@ public class ArticleDao implements IArticleDao {
 		
 		return response;
 	}
+
+	@Override
+	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession) {
+		final String selectSql = "SELECT username, title, description, body FROM article WHERE slug = ?";
+		final String updateSql = "UPDATE article SET slug = ?, title = ?, description = ?, body = ? WHERE slug = ?";
+		ArticleDto updateArticle = new ArticleDto();
+		UserDto currentUser = getCurrentUser(httpSession);
+		
+		ArticleDto selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<ArticleDto>() {
+			@Override
+			public ArticleDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				ArticleDto articleDto = new ArticleDto();
+				
+				articleDto.setUsername(resultSet.getString("username"));
+				articleDto.setTitle(resultSet.getString("title"));
+				articleDto.setDescription(resultSet.getString("description"));
+				articleDto.setBody(resultSet.getString("body"));
+				
+				return articleDto;
+			}
+		}, slug);
+		
+		if (currentUser.getUsername().equals(selectResult.getUsername())) {
+			updateArticle.setTitle(selectResult.getTitle());
+			updateArticle.setDescription(selectResult.getDescription());
+			updateArticle.setBody(selectResult.getBody());
+			
+			if (article.get("article").getTitle() != null) {
+				updateArticle.setTitle(article.get("article").getTitle());
+			}
+			if (article.get("article").getDescription() != null) {
+				updateArticle.setDescription(article.get("article").getDescription());
+			}
+			if (article.get("article").getBody() != null) {
+				updateArticle.setBody(article.get("article").getBody());
+			}
+			
+			int updateResult = jdbcTemplate.update(updateSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, updateArticle.getTitle().replace(" ", "-"));
+					preparedStatement.setString(2, updateArticle.getTitle());
+					preparedStatement.setString(3, updateArticle.getDescription());
+					preparedStatement.setString(4, updateArticle.getBody());
+					preparedStatement.setString(5, slug);
+				}
+			});
+			
+			if (updateResult == 1) {
+				return getArticle(updateArticle.getTitle().replace(" ", "-"));
+			}
+		}
+		
+		return null;
+	}
 }

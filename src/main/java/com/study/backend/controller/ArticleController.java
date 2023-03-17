@@ -7,6 +7,7 @@ import javax.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,5 +33,10 @@ public class ArticleController {
 	@GetMapping("/articles/{slug}")
 	public HashMap<String, ArticleResponse> getArticle(@PathVariable String slug) {
 		return articleService.getArticle(slug);
+	}
+	
+	@PutMapping("/articles/{slug}")
+	public HashMap<String, ArticleResponse> updateArticle(@PathVariable String slug, @RequestBody HashMap<String, ArticleDto> article, HttpSession httpSession) {
+		return articleService.updateArticle(slug, article, httpSession);
 	}
 }

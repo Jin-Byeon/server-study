@@ -6,6 +6,8 @@ import javax.validation.constraints.Size;
 
 public class ArticleDto {
 	@Size(max = 100)
+	private String username;
+	@Size(max = 100)
 	private String title;
 	@Size(max = 100)
 	private String description;
@@ -13,6 +15,12 @@ public class ArticleDto {
 	private String body;
 	private ArrayList<String> tagList;
 	
+	public String getUsername() {
+		return username;
+	}
+	public void setUsername(String username) {
+		this.username = username;
+	}
 	public String getTitle() {
 		return title;
 	}
