@@ -9,4 +9,5 @@ import com.study.backend.dto.ArticleResponse;
 
 public interface IArticleDao {
 	HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession);
+	HashMap<String, ArticleResponse> getArticle(String slug);
 }

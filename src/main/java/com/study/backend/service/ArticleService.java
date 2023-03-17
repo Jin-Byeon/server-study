@@ -23,4 +23,8 @@ public class ArticleService implements IArticleService{
 		return articleDao.createArticle(article, httpSession);
 	}
 
+	@Override
+	public HashMap<String, ArticleResponse> getArticle(String slug) {
+		return articleDao.getArticle(slug);
+	}
 }

@@ -55,13 +55,13 @@ public class ArticleDao implements IArticleDao {
 		});
 	}
 
-	public boolean isFollowing(HttpSession httpSession) {
+	public boolean isFollowing(String username) {
 		List<Integer> followingResult = jdbcTemplate.query(isFollowingSql, new RowMapper<Integer>() {
 			@Override
 			public Integer mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				return resultSet.getInt("following");
 			}
-		}, getCurrentUser(httpSession).getUsername());
+		}, username);
 
 		for (int i = 0; i < followingResult.size(); i++) {
 			if (followingResult.get(i) == 1) {
@@ -73,8 +73,7 @@ public class ArticleDao implements IArticleDao {
 	}
 
 	@Override
-	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article,
-			HttpSession httpSession) {
+	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		final String insertTagListSql = "INSERT INTO taglist (tag) VALUES (?)";
 		final String insertTagSql = "INSERT INTO tags (slug, tag) VALUES (?, ?)";
 		final String insertArticleSql = "INSERT INTO article (slug, username, title, description, body, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -130,7 +129,7 @@ public class ArticleDao implements IArticleDao {
 			authorDto.setUsername(currentUser.getUsername());
 			authorDto.setBio(currentUser.getBio());
 			authorDto.setImage(currentUser.getImage());
-			authorDto.setFollowing(isFollowing(httpSession));
+			authorDto.setFollowing(isFollowing(currentUser.getUsername()));
 
 			articleResponse.setSlug(article.get("article").getTitle().replace(" ", "-"));
 			articleResponse.setTitle(article.get("article").getTitle());
@@ -146,6 +145,66 @@ public class ArticleDao implements IArticleDao {
 			response.put("article", articleResponse);
 		}
 
+		return response;
+	}
+	
+	public HashMap<String, ArticleResponse> getArticle(String slug) {
+		final String selectArticleSql = "SELECT slug, username, title, description, body, createdat, updatedat, favorited, favoritescount FROM article WHERE slug = ?"; 
+		final String selectUserTagsSql = "SELECT tag FROM tags WHERE slug = ?";
+		final String selectUserSql = "SELECT username, bio, image FROM users WHERE username = ?";
+		
+		HashMap<String, ArticleResponse> response = new HashMap<String, ArticleResponse>();
+		ArticleResponse articleResponse = new ArticleResponse();
+		AuthorDto authorDto = new AuthorDto();
+		
+		ArticleResponse selectArticleResult = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<ArticleResponse>() {
+			@Override
+			public ArticleResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				articleResponse.setSlug(resultSet.getString("slug"));
+				articleResponse.setTitle(resultSet.getString("title"));
+				articleResponse.setDescription(resultSet.getString("description"));
+				articleResponse.setBody(resultSet.getString("body"));
+				articleResponse.setCreatedAt(resultSet.getString("createdat"));
+				articleResponse.setUpdatedAt(resultSet.getString("updatedat"));
+				
+				if (resultSet.getInt("favorited") == 0) {
+					articleResponse.setFavorited(false);
+				} else {
+					articleResponse.setFavorited(true);
+				}
+				
+				articleResponse.setFavoritesCount(resultSet.getInt("favoritescount"));
+				
+				authorDto.setUsername(resultSet.getString("username"));
+				
+				return articleResponse;
+			}
+		}, slug);
+		
+		List<String> selectUserTagsResult = jdbcTemplate.query(selectUserTagsSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("tag");
+			}
+		}, selectArticleResult.getSlug());
+		
+		selectArticleResult.setTagList((ArrayList<String>) selectUserTagsResult);
+		
+		AuthorDto selectUserResult = jdbcTemplate.queryForObject(selectUserSql, new RowMapper<AuthorDto>() {
+			@Override
+			public AuthorDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				authorDto.setBio(resultSet.getString("bio"));
+				authorDto.setImage(resultSet.getString("image"));
+				authorDto.setFollowing(isFollowing(resultSet.getString("username")));
+				
+				return authorDto;
+			}
+		}, authorDto.getUsername());
+		
+		selectArticleResult.setAuthor(selectUserResult);
+		
+		response.put("article", selectArticleResult);
+		
 		return response;
 	}
 }
