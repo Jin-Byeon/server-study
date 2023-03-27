@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.study.backend.dto.AuthorDto;
 import com.study.backend.dto.CommentDto;
@@ -63,7 +65,7 @@ public class CommentDao implements ICommentDao {
 	
 	@Override
 	public HashMap<String, CommentResponse> addComment(String slug, HashMap<String, CommentDto> comment, HttpSession httpSession) {
-		final String insertSql = "INSERT INTO comments (id, slug, createdat, updatedat, body) VALUES (id_sequence.NEXTVAL, ?, ?, ?, ?)";
+		final String insertSql = "INSERT INTO comments (id, slug, createdat, updatedat, body, username) VALUES (id_sequence.NEXTVAL, ?, ?, ?, ?, ?)";
 		final String selectSequenceSql = "SELECT id_sequence.CURRVAL FROM DUAL";
 		String now = LocalDateTime.now().toString();
 		HashMap<String, CommentResponse> response = new HashMap<String, CommentResponse>();
@@ -76,6 +78,7 @@ public class CommentDao implements ICommentDao {
 				preparedStatement.setString(2, now);
 				preparedStatement.setString(3, now);
 				preparedStatement.setString(4, comment.get("comment").getBody());
+				preparedStatement.setString(5, currentUser.getUsername());
 			}
 		});
 		
@@ -97,6 +100,91 @@ public class CommentDao implements ICommentDao {
 			response.put("comment", commentResponse);
 		}
 
+		return response;
+	}
+
+	@Override
+	public HashMap<String, ArrayList<CommentResponse>> getComments(@PathVariable String slug, HttpSession httpSession) {
+		final String selectUserSql = "SELECT bio, image FROM users WHERE username = ?";
+		HashMap<String, ArrayList<CommentResponse>> response = new HashMap<String, ArrayList<CommentResponse>>();
+		
+		if (httpSession.getAttribute("Token") == null) {
+			String selectCommentSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ?";
+			
+			List<CommentResponse> selectCommentResult= jdbcTemplate.query(selectCommentSql, new RowMapper<CommentResponse>() {
+				@Override
+				public CommentResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+					CommentResponse commentResponse = new CommentResponse();
+					
+					commentResponse.setId(resultSet.getInt("id"));
+					commentResponse.setCreatedAt(resultSet.getString("createdat"));
+					commentResponse.setUpdatedAt(resultSet.getString("updatedat"));
+					commentResponse.setBody(resultSet.getString("body"));
+					
+					String username = resultSet.getString("username");
+					
+					AuthorDto author = jdbcTemplate.queryForObject(selectUserSql, new RowMapper<AuthorDto>() {
+						@Override
+						public AuthorDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+							AuthorDto authorDto = new AuthorDto();
+							
+							authorDto.setUsername(username);
+							authorDto.setBio(resultSet.getString("bio"));
+							authorDto.setImage(resultSet.getString("image"));
+							authorDto.setFollowing(isFollowing(username));
+							
+							return authorDto;
+						}
+					}, username);
+					
+					commentResponse.setAuthor(author);
+					
+					return commentResponse;
+				}
+			}, slug);
+			
+			response.put("comments", (ArrayList<CommentResponse>) selectCommentResult);
+		}
+		
+		if (httpSession.getAttribute("Token") != null) {
+			String selectCommentSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ? AND username = ?";
+			UserDto currentUser = getCurrentUser(httpSession);
+			
+			List<CommentResponse> selectCommentResult= jdbcTemplate.query(selectCommentSql, new RowMapper<CommentResponse>() {
+				@Override
+				public CommentResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+					CommentResponse commentResponse = new CommentResponse();
+					
+					commentResponse.setId(resultSet.getInt("id"));
+					commentResponse.setCreatedAt(resultSet.getString("createdat"));
+					commentResponse.setUpdatedAt(resultSet.getString("updatedat"));
+					commentResponse.setBody(resultSet.getString("body"));
+					
+					String username = resultSet.getString("username");
+					
+					AuthorDto author = jdbcTemplate.queryForObject(selectUserSql, new RowMapper<AuthorDto>() {
+						@Override
+						public AuthorDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+							AuthorDto authorDto = new AuthorDto();
+							
+							authorDto.setUsername(username);
+							authorDto.setBio(resultSet.getString("bio"));
+							authorDto.setImage(resultSet.getString("image"));
+							authorDto.setFollowing(isFollowing(username));
+							
+							return authorDto;
+						}
+					}, username);
+					
+					commentResponse.setAuthor(author);
+					
+					return commentResponse;
+				}
+			}, slug, currentUser.getUsername());
+			
+			response.put("comments", (ArrayList<CommentResponse>) selectCommentResult);
+		}
+		
 		return response;
 	}
 }

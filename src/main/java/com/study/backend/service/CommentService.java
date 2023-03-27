@@ -1,10 +1,12 @@
 package com.study.backend.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.study.backend.dao.CommentDao;
 import com.study.backend.dto.CommentDto;
@@ -21,5 +23,10 @@ public class CommentService implements ICommentService {
 	@Override
 	public HashMap<String, CommentResponse> addComment(String slug, HashMap<String, CommentDto> comment, HttpSession httpSession) {
 		return commentDao.addComment(slug, comment, httpSession);
+	}
+	
+	@Override
+	public HashMap<String, ArrayList<CommentResponse>> getComments(@PathVariable String slug, HttpSession httpSession) {
+		return commentDao.getComments(slug, httpSession);
 	}
 }

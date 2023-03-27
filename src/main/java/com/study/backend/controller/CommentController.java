@@ -1,9 +1,11 @@
 package com.study.backend.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,5 +28,10 @@ public class CommentController {
 	@PostMapping("/articles/{slug}/comments")
 	public HashMap<String, CommentResponse> addComment(@PathVariable String slug, @RequestBody HashMap<String, CommentDto> comment, HttpSession httpSession) {
 		return commentService.addComment(slug, comment, httpSession);
+	}
+	
+	@GetMapping("/articles/{slug}/comments")
+	public HashMap<String, ArrayList<CommentResponse>> getComments(@PathVariable String slug, HttpSession httpSession) {
+		return commentService.getComments(slug, httpSession);
 	}
 }
