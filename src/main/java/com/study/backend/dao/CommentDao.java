@@ -14,7 +14,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import com.study.backend.dto.AuthorDto;
 import com.study.backend.dto.CommentDto;
@@ -104,14 +103,14 @@ public class CommentDao implements ICommentDao {
 	}
 
 	@Override
-	public HashMap<String, ArrayList<CommentResponse>> getComments(@PathVariable String slug, HttpSession httpSession) {
+	public HashMap<String, ArrayList<CommentResponse>> getComments(String slug, HttpSession httpSession) {
 		final String selectUserSql = "SELECT bio, image FROM users WHERE username = ?";
 		HashMap<String, ArrayList<CommentResponse>> response = new HashMap<String, ArrayList<CommentResponse>>();
 		
 		if (httpSession.getAttribute("Token") == null) {
-			String selectCommentSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ?";
+			String selectCommentsSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ?";
 			
-			List<CommentResponse> selectCommentResult= jdbcTemplate.query(selectCommentSql, new RowMapper<CommentResponse>() {
+			List<CommentResponse> selectCommentsResult= jdbcTemplate.query(selectCommentsSql, new RowMapper<CommentResponse>() {
 				@Override
 				public CommentResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 					CommentResponse commentResponse = new CommentResponse();
@@ -143,14 +142,14 @@ public class CommentDao implements ICommentDao {
 				}
 			}, slug);
 			
-			response.put("comments", (ArrayList<CommentResponse>) selectCommentResult);
+			response.put("comments", (ArrayList<CommentResponse>) selectCommentsResult);
 		}
 		
 		if (httpSession.getAttribute("Token") != null) {
-			String selectCommentSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ? AND username = ?";
+			String selectCommentsSql = "SELECT id, createdat, updatedat, body, username FROM comments WHERE slug = ? AND username = ?";
 			UserDto currentUser = getCurrentUser(httpSession);
 			
-			List<CommentResponse> selectCommentResult= jdbcTemplate.query(selectCommentSql, new RowMapper<CommentResponse>() {
+			List<CommentResponse> selectCommentsResult= jdbcTemplate.query(selectCommentsSql, new RowMapper<CommentResponse>() {
 				@Override
 				public CommentResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 					CommentResponse commentResponse = new CommentResponse();
@@ -182,9 +181,33 @@ public class CommentDao implements ICommentDao {
 				}
 			}, slug, currentUser.getUsername());
 			
-			response.put("comments", (ArrayList<CommentResponse>) selectCommentResult);
+			response.put("comments", (ArrayList<CommentResponse>) selectCommentsResult);
 		}
 		
 		return response;
+	}
+
+	@Override
+	public void deleteComment(String slug, int id, HttpSession httpSession) {
+		final String selectSql = "SELECT username FROM comments WHERE slug = ? AND id = ?";
+		final String deleteSql = "DELETE FROM comments WHERE slug = ? AND id = ?";
+		UserDto currentUser = getCurrentUser(httpSession);
+		
+		String username = jdbcTemplate.queryForObject(selectSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("username");
+			}
+		}, slug, id);
+		
+		if (currentUser.getUsername().equals(username)) {
+			jdbcTemplate.update(deleteSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, slug);
+					preparedStatement.setInt(2, id);
+				}
+			});
+		}
 	}
 }
