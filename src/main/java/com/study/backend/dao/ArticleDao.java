@@ -72,8 +72,20 @@ public class ArticleDao implements IArticleDao {
 		return false;
 	}
 
+	public int checkFavorite(String username, String slug) {
+		final String selectFavoriteCheckSql = "SELECT count(*) count FROM favorite WHERE username = ? AND slug = ?";
+
+		return jdbcTemplate.queryForObject(selectFavoriteCheckSql, new RowMapper<Integer>() {
+			@Override
+			public Integer mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getInt("count");
+			}
+		}, username, slug);
+	}
+
 	@Override
-	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession) {
+	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article,
+			HttpSession httpSession) {
 		final String insertTagSql = "INSERT INTO tags (slug, tag) VALUES (?, ?)";
 		final String insertTagListSql = "INSERT INTO taglist (tag) VALUES (?)";
 		final String insertArticleSql = "INSERT INTO article (slug, username, title, description, body, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -97,7 +109,7 @@ public class ArticleDao implements IArticleDao {
 		if (article.get("article").getTagList() != null) {
 			List<String> tags = getTags();
 			ArrayList<String> tagList = article.get("article").getTagList();
-			
+
 			for (int i = 0; i < tagList.size(); i++) {
 				String tag = tagList.get(i);
 
@@ -155,94 +167,100 @@ public class ArticleDao implements IArticleDao {
 
 		return response;
 	}
-	
-	public HashMap<String, ArticleResponse> getArticle(String slug) {
-		final String selectArticleSql = "SELECT slug, username, title, description, body, createdat, updatedat, favorited, favoritescount FROM article WHERE slug = ?"; 
+
+	public HashMap<String, ArticleResponse> getArticle(String slug, HttpSession httpSession) {
+		final String selectArticleSql = "SELECT slug, username, title, description, body, createdat, updatedat, favoritescount FROM article WHERE slug = ?";
 		final String selectUserTagsSql = "SELECT tag FROM tags WHERE slug = ?";
 		final String selectUserSql = "SELECT username, bio, image FROM users WHERE username = ?";
-		
-		HashMap<String, ArticleResponse> response = new HashMap<String, ArticleResponse>();
+
+		HashMap<String, ArticleResponse> response = new HashMap<>();
 		ArticleResponse articleResponse = new ArticleResponse();
 		AuthorDto authorDto = new AuthorDto();
-		
-		ArticleResponse selectArticleResult = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<ArticleResponse>() {
-			@Override
-			public ArticleResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
-				articleResponse.setSlug(resultSet.getString("slug"));
-				articleResponse.setTitle(resultSet.getString("title"));
-				articleResponse.setDescription(resultSet.getString("description"));
-				articleResponse.setBody(resultSet.getString("body"));
-				articleResponse.setCreatedAt(resultSet.getString("createdat"));
-				articleResponse.setUpdatedAt(resultSet.getString("updatedat"));
-				
-				if (resultSet.getInt("favorited") == 0) {
-					articleResponse.setFavorited(false);
-				} else {
-					articleResponse.setFavorited(true);
-				}
-				
-				articleResponse.setFavoritesCount(resultSet.getInt("favoritescount"));
-				
-				authorDto.setUsername(resultSet.getString("username"));
-				
-				return articleResponse;
-			}
-		}, slug);
-		
+
+		ArticleResponse selectArticleResult = jdbcTemplate.queryForObject(selectArticleSql,
+				new RowMapper<ArticleResponse>() {
+					@Override
+					public ArticleResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+						articleResponse.setSlug(resultSet.getString("slug"));
+						articleResponse.setTitle(resultSet.getString("title"));
+						articleResponse.setDescription(resultSet.getString("description"));
+						articleResponse.setBody(resultSet.getString("body"));
+						articleResponse.setCreatedAt(resultSet.getString("createdat"));
+						articleResponse.setUpdatedAt(resultSet.getString("updatedat"));
+
+						if (httpSession.getAttribute("Token") == null) {
+							articleResponse.setFavorited(false);
+						} else {
+							if (checkFavorite(getCurrentUser(httpSession).getUsername(), slug) == 0) {
+								articleResponse.setFavorited(false);
+							} else {
+								articleResponse.setFavorited(true);
+							}
+						}
+
+						articleResponse.setFavoritesCount(resultSet.getInt("favoritescount"));
+
+						authorDto.setUsername(resultSet.getString("username"));
+
+						return articleResponse;
+					}
+				}, slug);
+
 		List<String> selectUserTagsResult = jdbcTemplate.query(selectUserTagsSql, new RowMapper<String>() {
 			@Override
 			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				return resultSet.getString("tag");
 			}
 		}, selectArticleResult.getSlug());
-		
+
 		selectArticleResult.setTagList((ArrayList<String>) selectUserTagsResult);
-		
+
 		AuthorDto selectUserResult = jdbcTemplate.queryForObject(selectUserSql, new RowMapper<AuthorDto>() {
 			@Override
 			public AuthorDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				authorDto.setBio(resultSet.getString("bio"));
 				authorDto.setImage(resultSet.getString("image"));
 				authorDto.setFollowing(isFollowing(resultSet.getString("username")));
-				
+
 				return authorDto;
 			}
 		}, authorDto.getUsername());
-		
+
 		selectArticleResult.setAuthor(selectUserResult);
-		
+
 		response.put("article", selectArticleResult);
-		
+
 		return response;
 	}
 
 	@Override
-	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession) {
+	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article,
+			HttpSession httpSession) {
 		final String selectSql = "SELECT username, title, description, body FROM article WHERE slug = ?";
 		final String updateSql = "UPDATE article SET slug = ?, title = ?, description = ?, body = ?, updatedat = ? WHERE slug = ?";
 		String now = LocalDateTime.now().toString();
 		ArticleDto updateArticle = new ArticleDto();
 		UserDto currentUser = getCurrentUser(httpSession);
-		
+
 		ArticleDto selectResult = jdbcTemplate.queryForObject(selectSql, new RowMapper<ArticleDto>() {
 			@Override
 			public ArticleDto mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				ArticleDto articleDto = new ArticleDto();
-				
+
 				articleDto.setUsername(resultSet.getString("username"));
 				articleDto.setTitle(resultSet.getString("title"));
 				articleDto.setDescription(resultSet.getString("description"));
 				articleDto.setBody(resultSet.getString("body"));
-				
+
 				return articleDto;
 			}
 		}, slug);
-		
+
 		if (currentUser.getUsername().equals(selectResult.getUsername())) {
 			updateArticle.setTitle(selectResult.getTitle());
 			updateArticle.setDescription(selectResult.getDescription());
 			updateArticle.setBody(selectResult.getBody());
-			
+
 			if (article.get("article").getTitle() != null) {
 				updateArticle.setTitle(article.get("article").getTitle());
 			}
@@ -252,7 +270,7 @@ public class ArticleDao implements IArticleDao {
 			if (article.get("article").getBody() != null) {
 				updateArticle.setBody(article.get("article").getBody());
 			}
-			
+
 			int updateResult = jdbcTemplate.update(updateSql, new PreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement preparedStatement) throws SQLException {
@@ -264,12 +282,12 @@ public class ArticleDao implements IArticleDao {
 					preparedStatement.setString(6, slug);
 				}
 			});
-			
+
 			if (updateResult == 1) {
-				return getArticle(updateArticle.getTitle().replace(" ", "-"));
+				return getArticle(updateArticle.getTitle().replace(" ", "-"), httpSession);
 			}
 		}
-		
+
 		return null;
 	}
 
@@ -281,14 +299,14 @@ public class ArticleDao implements IArticleDao {
 		final String deleteArticleSql = "DELETE FROM article WHERE slug = ?";
 		final String deleteTagListSql = "DELETE FROM taglist WHERE tag = ?";
 		UserDto currentUser = getCurrentUser(httpSession);
-	
+
 		String username = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<String>() {
 			@Override
 			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 				return resultSet.getString("username");
 			}
 		}, slug);
-		
+
 		if (currentUser.getUsername().equals(username)) {
 			int deleteTagsResult = jdbcTemplate.update(deleteTagsSql, new PreparedStatementSetter() {
 				@Override
@@ -296,14 +314,14 @@ public class ArticleDao implements IArticleDao {
 					preparedStatement.setString(1, slug);
 				}
 			});
-			
+
 			jdbcTemplate.update(deleteArticleSql, new PreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement preparedStatement) throws SQLException {
 					preparedStatement.setString(1, slug);
 				}
 			});
-			
+
 			if (deleteTagsResult > 0) {
 				List<String> tags = getTags();
 				List<String> tagList = jdbcTemplate.query(selectTagsSql, new RowMapper<String>() {
@@ -312,10 +330,10 @@ public class ArticleDao implements IArticleDao {
 						return resultSet.getString("tag");
 					}
 				});
-				
+
 				for (int i = 0; i < tags.size(); i++) {
 					String tag = tags.get(i);
-					
+
 					if (!tagList.contains(tag)) {
 						jdbcTemplate.update(deleteTagListSql, new PreparedStatementSetter() {
 							@Override
@@ -327,5 +345,35 @@ public class ArticleDao implements IArticleDao {
 				}
 			}
 		}
+	}
+
+	@Override
+	public HashMap<String, ArticleResponse> favoriteArticle(String slug, HttpSession httpSession) {
+		final String updateFavoriteSql = "UPDATE article SET favoritescount = favoritescount + 1 WHERE slug = ?";
+		final String insertFavoriteCheckSql = "INSERT INTO favorite (username, slug) VALUES (?, ?)";
+		String currentUsername = getCurrentUser(httpSession).getUsername();
+
+		if (checkFavorite(currentUsername, slug) == 0) {
+			int updateFavoriteResult = jdbcTemplate.update(updateFavoriteSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, slug);
+				}
+			});
+
+			int insertFavoriteCheckResult = jdbcTemplate.update(insertFavoriteCheckSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, currentUsername);
+					preparedStatement.setString(2, slug);
+				}
+			});
+
+			if (updateFavoriteResult == 1 && insertFavoriteCheckResult == 1) {
+				return getArticle(slug, httpSession);
+			}
+		}
+
+		return getArticle(slug, httpSession);
 	}
 }

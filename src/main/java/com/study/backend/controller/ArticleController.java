@@ -32,8 +32,8 @@ public class ArticleController {
 	}
 	
 	@GetMapping("/articles/{slug}")
-	public HashMap<String, ArticleResponse> getArticle(@PathVariable String slug) {
-		return articleService.getArticle(slug);
+	public HashMap<String, ArticleResponse> getArticle(@PathVariable String slug, HttpSession httpSession) {
+		return articleService.getArticle(slug, httpSession);
 	}
 	
 	@PutMapping("/articles/{slug}")
@@ -44,5 +44,10 @@ public class ArticleController {
 	@DeleteMapping("/articles/{slug}")
 	public void deleteArticle(@PathVariable String slug, HttpSession httpSession) {
 		articleService.deleteArticle(slug, httpSession);
+	}
+	
+	@PostMapping("/articles/{slug}/favorite")
+	public HashMap<String, ArticleResponse> favoriteArticle(@PathVariable String slug, HttpSession httpSession) {
+		return articleService.favoriteArticle(slug, httpSession);
 	}
 }

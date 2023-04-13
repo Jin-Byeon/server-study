@@ -24,8 +24,8 @@ public class ArticleService implements IArticleService{
 	}
 
 	@Override
-	public HashMap<String, ArticleResponse> getArticle(String slug) {
-		return articleDao.getArticle(slug);
+	public HashMap<String, ArticleResponse> getArticle(String slug, HttpSession httpSession) {
+		return articleDao.getArticle(slug, httpSession);
 	}
 
 	@Override
@@ -36,5 +36,10 @@ public class ArticleService implements IArticleService{
 	@Override
 	public void deleteArticle(String slug, HttpSession httpSession) {
 		articleDao.deleteArticle(slug, httpSession);
+	}
+	
+	@Override
+	public HashMap<String, ArticleResponse> favoriteArticle(String slug, HttpSession httpSession) {
+		return articleDao.favoriteArticle(slug, httpSession);
 	}
 }
