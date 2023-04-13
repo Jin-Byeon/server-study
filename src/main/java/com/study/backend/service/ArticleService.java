@@ -1,5 +1,6 @@
 package com.study.backend.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
@@ -46,5 +47,10 @@ public class ArticleService implements IArticleService{
 	@Override
 	public HashMap<String, ArticleResponse> unfavoriteArticle(String slug, HttpSession httpSession) {
 		return articleDao.unfavoriteArticle(slug, httpSession);
+	}
+
+	@Override
+	public HashMap<String, ArrayList<String>> getTags() {
+		return articleDao.getTags();
 	}
 }

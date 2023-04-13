@@ -1,11 +1,9 @@
 package com.study.backend.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
-
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import com.study.backend.dto.ArticleDto;
 import com.study.backend.dto.ArticleResponse;
@@ -17,4 +15,5 @@ public interface IArticleService {
 	void deleteArticle(String slug, HttpSession httpSession);
 	HashMap<String, ArticleResponse> favoriteArticle(String slug, HttpSession httpSession);
 	HashMap<String, ArticleResponse> unfavoriteArticle(String slug, HttpSession httpSession);
+	HashMap<String, ArrayList<String>> getTags();
 }

@@ -24,7 +24,6 @@ import com.study.backend.dto.UserDto;
 public class ArticleDao implements IArticleDao {
 	private final JdbcTemplate jdbcTemplate;
 	private final String getCurrentUserSql = "SELECT username, bio, image FROM users WHERE token = ?";
-	private final String getTagsSql = "SELECT tag FROM taglist";
 	private final String isFollowingSql = "SELECT following FROM follow WHERE follow_username = ?";
 
 	public ArticleDao(JdbcTemplate jdbcTemplate) {
@@ -44,15 +43,6 @@ public class ArticleDao implements IArticleDao {
 				return userDto;
 			}
 		}, httpSession.getAttribute("Token"));
-	}
-
-	public List<String> getTags() {
-		return jdbcTemplate.query(getTagsSql, new RowMapper<String>() {
-			@Override
-			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
-				return resultSet.getString("tag");
-			}
-		});
 	}
 
 	public boolean isFollowing(String username) {
@@ -87,7 +77,6 @@ public class ArticleDao implements IArticleDao {
 	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article,
 			HttpSession httpSession) {
 		final String insertTagSql = "INSERT INTO tags (slug, tag) VALUES (?, ?)";
-		final String insertTagListSql = "INSERT INTO taglist (tag) VALUES (?)";
 		final String insertArticleSql = "INSERT INTO article (slug, username, title, description, body, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		String now = LocalDateTime.now().toString();
 		HashMap<String, ArticleResponse> response = new HashMap<String, ArticleResponse>();
@@ -107,38 +96,18 @@ public class ArticleDao implements IArticleDao {
 		});
 
 		if (article.get("article").getTagList() != null) {
-			List<String> tags = getTags();
 			ArrayList<String> tagList = article.get("article").getTagList();
 
 			for (int i = 0; i < tagList.size(); i++) {
 				String tag = tagList.get(i);
 
-				if (tags.contains(tag)) {
-					jdbcTemplate.update(insertTagSql, new PreparedStatementSetter() {
-						@Override
-						public void setValues(PreparedStatement preparedStatement) throws SQLException {
-							preparedStatement.setString(1, article.get("article").getTitle().replace(" ", "-"));
-							preparedStatement.setString(2, tag);
-						}
-					});
-				} else {
-					int insertTagListResult = jdbcTemplate.update(insertTagListSql, new PreparedStatementSetter() {
-						@Override
-						public void setValues(PreparedStatement preparedStatement) throws SQLException {
-							preparedStatement.setString(1, tag);
-						}
-					});
-
-					if (insertTagListResult == 1) {
-						jdbcTemplate.update(insertTagSql, new PreparedStatementSetter() {
-							@Override
-							public void setValues(PreparedStatement preparedStatement) throws SQLException {
-								preparedStatement.setString(1, article.get("article").getTitle().replace(" ", "-"));
-								preparedStatement.setString(2, tag);
-							}
-						});
+				jdbcTemplate.update(insertTagSql, new PreparedStatementSetter() {
+					@Override
+					public void setValues(PreparedStatement preparedStatement) throws SQLException {
+						preparedStatement.setString(1, article.get("article").getTitle().replace(" ", "-"));
+						preparedStatement.setString(2, tag);
 					}
-				}
+				});
 			}
 		}
 
@@ -294,10 +263,8 @@ public class ArticleDao implements IArticleDao {
 	@Override
 	public void deleteArticle(String slug, HttpSession httpSession) {
 		final String selectArticleSql = "SELECT username FROM article WHERE slug = ?";
-		final String selectTagsSql = "SELECT DISTINCT tag FROM tags";
 		final String deleteTagsSql = "DELETE FROM tags WHERE slug = ?";
 		final String deleteArticleSql = "DELETE FROM article WHERE slug = ?";
-		final String deleteTagListSql = "DELETE FROM taglist WHERE tag = ?";
 		UserDto currentUser = getCurrentUser(httpSession);
 
 		String username = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<String>() {
@@ -308,7 +275,7 @@ public class ArticleDao implements IArticleDao {
 		}, slug);
 
 		if (currentUser.getUsername().equals(username)) {
-			int deleteTagsResult = jdbcTemplate.update(deleteTagsSql, new PreparedStatementSetter() {
+			jdbcTemplate.update(deleteTagsSql, new PreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement preparedStatement) throws SQLException {
 					preparedStatement.setString(1, slug);
@@ -321,29 +288,6 @@ public class ArticleDao implements IArticleDao {
 					preparedStatement.setString(1, slug);
 				}
 			});
-
-			if (deleteTagsResult > 0) {
-				List<String> tags = getTags();
-				List<String> tagList = jdbcTemplate.query(selectTagsSql, new RowMapper<String>() {
-					@Override
-					public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
-						return resultSet.getString("tag");
-					}
-				});
-
-				for (int i = 0; i < tags.size(); i++) {
-					String tag = tags.get(i);
-
-					if (!tagList.contains(tag)) {
-						jdbcTemplate.update(deleteTagListSql, new PreparedStatementSetter() {
-							@Override
-							public void setValues(PreparedStatement preparedStatement) throws SQLException {
-								preparedStatement.setString(1, tag);
-							}
-						});
-					}
-				}
-			}
 		}
 	}
 
@@ -406,5 +350,22 @@ public class ArticleDao implements IArticleDao {
 		}
 		
 		return getArticle(slug, httpSession);
+	}
+	
+	@Override
+	public HashMap<String, ArrayList<String>> getTags() {
+		final String selectTagsSql = "SELECT DISTINCT tag FROM tags";
+		HashMap<String, ArrayList<String>> response = new HashMap<>();
+		
+		List<String> selectTagsResult = jdbcTemplate.query(selectTagsSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("tag");
+			}
+		});
+		
+		response.put("tags", (ArrayList<String>) selectTagsResult);
+		
+		return response;
 	}
 }

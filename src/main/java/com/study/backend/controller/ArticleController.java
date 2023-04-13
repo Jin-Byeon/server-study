@@ -1,5 +1,6 @@
 package com.study.backend.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.servlet.http.HttpSession;
@@ -54,5 +55,10 @@ public class ArticleController {
 	@DeleteMapping("/articles/{slug}/favorite")
 	public HashMap<String, ArticleResponse> unfavoriteArticle(@PathVariable String slug, HttpSession httpSession) {
 		return articleService.unfavoriteArticle(slug, httpSession);
+	}
+	
+	@GetMapping("/tags")
+	public HashMap<String, ArrayList<String>> getTags() {
+		return articleService.getTags();
 	}
 }
