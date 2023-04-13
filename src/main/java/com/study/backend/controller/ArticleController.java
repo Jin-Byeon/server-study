@@ -50,4 +50,9 @@ public class ArticleController {
 	public HashMap<String, ArticleResponse> favoriteArticle(@PathVariable String slug, HttpSession httpSession) {
 		return articleService.favoriteArticle(slug, httpSession);
 	}
+	
+	@DeleteMapping("/articles/{slug}/favorite")
+	public HashMap<String, ArticleResponse> unfavoriteArticle(@PathVariable String slug, HttpSession httpSession) {
+		return articleService.unfavoriteArticle(slug, httpSession);
+	}
 }

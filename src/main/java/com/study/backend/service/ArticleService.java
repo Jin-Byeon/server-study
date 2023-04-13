@@ -42,4 +42,9 @@ public class ArticleService implements IArticleService{
 	public HashMap<String, ArticleResponse> favoriteArticle(String slug, HttpSession httpSession) {
 		return articleDao.favoriteArticle(slug, httpSession);
 	}
+	
+	@Override
+	public HashMap<String, ArticleResponse> unfavoriteArticle(String slug, HttpSession httpSession) {
+		return articleDao.unfavoriteArticle(slug, httpSession);
+	}
 }

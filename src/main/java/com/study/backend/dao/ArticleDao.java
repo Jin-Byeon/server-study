@@ -376,4 +376,35 @@ public class ArticleDao implements IArticleDao {
 
 		return getArticle(slug, httpSession);
 	}
+
+	@Override
+	public HashMap<String, ArticleResponse> unfavoriteArticle(String slug, HttpSession httpSession) {
+		final String updateUnfavoriteSql = "UPDATE article SET favoritescount = favoritescount - 1 WHERE slug = ?";
+		final String deleteFavoriteCheckSql = "DELETE FROM favorite WHERE username = ? AND slug = ?";
+		String currentUsername = getCurrentUser(httpSession).getUsername();
+		
+		if (checkFavorite(currentUsername, slug) == 1) {
+			int updateUnfavoriteResult = jdbcTemplate.update(updateUnfavoriteSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, slug);
+				}
+			});
+			
+			int deleteFavoriteCheckResult = jdbcTemplate.update(deleteFavoriteCheckSql, new PreparedStatementSetter() {
+				@Override
+				public void setValues(PreparedStatement preparedStatement) throws SQLException {
+					preparedStatement.setString(1, currentUsername);
+					preparedStatement.setString(2, slug);
+				}
+			});
+			
+			if (updateUnfavoriteResult == 1 && deleteFavoriteCheckResult == 1) {
+				return getArticle(slug, httpSession);
+			}
+			
+		}
+		
+		return getArticle(slug, httpSession);
+	}
 }
