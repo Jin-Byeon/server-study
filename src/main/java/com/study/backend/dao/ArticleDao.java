@@ -5,6 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -19,6 +22,18 @@ import com.study.backend.dto.ArticleDto;
 import com.study.backend.dto.ArticleResponse;
 import com.study.backend.dto.AuthorDto;
 import com.study.backend.dto.UserDto;
+
+class CreatedAtDESC implements Comparator<ArticleResponse> {
+	@Override
+	public int compare(ArticleResponse a, ArticleResponse b) {
+		if (LocalDateTime.parse(b.getCreatedAt()).isAfter(LocalDateTime.parse(a.getCreatedAt()))) {
+			return 1;
+		} else if (LocalDateTime.parse(a.getCreatedAt()).isAfter(LocalDateTime.parse(b.getCreatedAt()))) {
+			return -1;
+		}
+		return 0;
+	}
+}
 
 @Repository
 public class ArticleDao implements IArticleDao {
@@ -204,7 +219,6 @@ public class ArticleDao implements IArticleDao {
 	@Override
 	public HashMap<String, Object> listArticles(String tag, String author, String favorited, int limit, int offset, HttpSession httpSession) {
 		final String selectSlugsSql = "SELECT DISTINCT article.slug FROM (article JOIN tags ON article.slug = tags.slug) WHERE tags.tag = ? AND article.username = ? AND article.username = ? ORDER BY article.createdat DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
-		
 		HashMap<String, Object> response = new HashMap<>();
 		ArrayList<ArticleResponse> articles = new ArrayList<>();
 		
@@ -221,6 +235,60 @@ public class ArticleDao implements IArticleDao {
 		
 		response.put("articles", articles);
 		response.put("articlesCount", articles.size());
+		
+		return response;
+	}
+	
+	@Override
+	public HashMap<String, Object> feedArticles(int limit, int offset, HttpSession httpSession) {
+		final String selectUsernamesSql = "SELECT article.username FROM article JOIN favorite ON article.slug = favorite.slug WHERE favorite.username = ?";
+		final String selectSlugsSql = "SELECT slug FROM article WHERE username = ?";
+		HashMap<String, Object> response = new HashMap<>();
+		ArrayList<ArticleResponse> articles = new ArrayList<>();
+		List<String> slugList = new ArrayList<>();
+		
+		UserDto currentUser = getCurrentUser(httpSession);
+		
+		List<String> usernameList = jdbcTemplate.query(selectUsernamesSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("username");
+			}
+		}, currentUser.getUsername());
+		
+		for (String username: usernameList) {
+			List<String> selectSlugsResult = jdbcTemplate.query(selectSlugsSql, new RowMapper<String>() {
+				@Override
+				public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+					return resultSet.getString("slug");
+				}
+			}, username);
+			
+			slugList.addAll(selectSlugsResult);
+		}
+		
+		
+		for (String slug: slugList) {
+			articles.add(this.getArticle(slug, httpSession).get("article"));
+		}
+	
+		
+		int consistentOffset = 0;
+		int consistentLimit = articles.size();
+	
+		if (offset <= consistentLimit && limit <= consistentLimit) {
+			consistentOffset = offset;
+			consistentLimit = limit;
+		} else if (offset <= consistentLimit && limit > consistentLimit) {
+			consistentOffset = offset;
+		} else {
+			consistentOffset = consistentLimit;
+		}
+		
+		articles.sort(new CreatedAtDESC());
+		
+		response.put("articles", articles.subList(consistentOffset, consistentLimit));
+		response.put("articlesCount", articles.subList(consistentOffset, consistentLimit).size());
 		
 		return response;
 	}

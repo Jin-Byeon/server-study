@@ -12,6 +12,7 @@ public interface IArticleService {
 	HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession);
 	HashMap<String, ArticleResponse> getArticle(String slug, HttpSession httpSession);
 	HashMap<String, Object> listArticles(String tag, String author, String favorited, int limit, int offset, HttpSession httpSession);
+	HashMap<String, Object> feedArticles(int limit, int offset, HttpSession httpSession);
 	HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession);
 	void deleteArticle(String slug, HttpSession httpSession);
 	HashMap<String, ArticleResponse> favoriteArticle(String slug, HttpSession httpSession);

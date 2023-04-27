@@ -43,6 +43,11 @@ public class ArticleController {
 		return articleService.listArticles(tag, author, favorited, limit, offset, httpSession);
 	}
 	
+	@GetMapping("/articles/feed")
+	public HashMap<String, Object> feedArticles(@RequestParam(defaultValue="20") int limit, @RequestParam(defaultValue="0")int offset, HttpSession httpSession) {
+		return articleService.feedArticles(limit, offset, httpSession);
+	}
+	
 	@PutMapping("/articles/{slug}")
 	public HashMap<String, ArticleResponse> updateArticle(@PathVariable String slug, @RequestBody HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		return articleService.updateArticle(slug, article, httpSession);

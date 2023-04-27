@@ -6,7 +6,6 @@ import java.util.HashMap;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.study.backend.dao.ArticleDao;
 import com.study.backend.dto.ArticleDto;
@@ -31,8 +30,13 @@ public class ArticleService implements IArticleService{
 	}
 	
 	@Override
-	public HashMap<String, Object> listArticles(@RequestParam String tag, @RequestParam String author, @RequestParam String favorited, @RequestParam int limit, @RequestParam int offset, HttpSession httpSession) {
+	public HashMap<String, Object> listArticles(String tag, String author, String favorited, int limit, int offset, HttpSession httpSession) {
 		return articleDao.listArticles(tag, author, favorited, limit, offset, httpSession);
+	}
+	
+	@Override
+	public HashMap<String, Object> feedArticles(int limit, int offset, HttpSession httpSession) {
+		return articleDao.feedArticles(limit, offset, httpSession);
 	}
 
 	@Override
