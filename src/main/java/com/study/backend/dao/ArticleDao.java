@@ -74,8 +74,7 @@ public class ArticleDao implements IArticleDao {
 	}
 
 	@Override
-	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article,
-			HttpSession httpSession) {
+	public HashMap<String, ArticleResponse> createArticle(HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		final String insertTagSql = "INSERT INTO tags (slug, tag) VALUES (?, ?)";
 		final String insertArticleSql = "INSERT INTO article (slug, username, title, description, body, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)";
 		String now = LocalDateTime.now().toString();
@@ -146,8 +145,7 @@ public class ArticleDao implements IArticleDao {
 		ArticleResponse articleResponse = new ArticleResponse();
 		AuthorDto authorDto = new AuthorDto();
 
-		ArticleResponse selectArticleResult = jdbcTemplate.queryForObject(selectArticleSql,
-				new RowMapper<ArticleResponse>() {
+		ArticleResponse selectArticleResult = jdbcTemplate.queryForObject(selectArticleSql, new RowMapper<ArticleResponse>() {
 					@Override
 					public ArticleResponse mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
 						articleResponse.setSlug(resultSet.getString("slug"));
@@ -201,10 +199,34 @@ public class ArticleDao implements IArticleDao {
 
 		return response;
 	}
+	
 
 	@Override
-	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article,
-			HttpSession httpSession) {
+	public HashMap<String, Object> listArticles(String tag, String author, String favorited, int limit, int offset, HttpSession httpSession) {
+		final String selectSlugsSql = "SELECT DISTINCT article.slug FROM (article JOIN tags ON article.slug = tags.slug) WHERE tags.tag = ? AND article.username = ? AND article.username = ? ORDER BY article.createdat DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+		
+		HashMap<String, Object> response = new HashMap<>();
+		ArrayList<ArticleResponse> articles = new ArrayList<>();
+		
+		List<String> slugList = jdbcTemplate.query(selectSlugsSql, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet resultSet, int rowNumber) throws SQLException {
+				return resultSet.getString("slug");
+			}
+		}, tag, author, favorited, offset, limit);
+		
+		for (String slug: slugList) {
+			articles.add(this.getArticle(slug, httpSession).get("article"));
+		}
+		
+		response.put("articles", articles);
+		response.put("articlesCount", articles.size());
+		
+		return response;
+	}
+
+	@Override
+	public HashMap<String, ArticleResponse> updateArticle(String slug, HashMap<String, ArticleDto> article, HttpSession httpSession) {
 		final String selectSql = "SELECT username, title, description, body FROM article WHERE slug = ?";
 		final String updateSql = "UPDATE article SET slug = ?, title = ?, description = ?, body = ?, updatedat = ? WHERE slug = ?";
 		String now = LocalDateTime.now().toString();

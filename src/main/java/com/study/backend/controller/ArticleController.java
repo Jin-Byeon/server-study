@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.study.backend.dto.ArticleDto;
@@ -35,6 +36,11 @@ public class ArticleController {
 	@GetMapping("/articles/{slug}")
 	public HashMap<String, ArticleResponse> getArticle(@PathVariable String slug, HttpSession httpSession) {
 		return articleService.getArticle(slug, httpSession);
+	}
+	
+	@GetMapping("/articles")
+	public HashMap<String, Object> listArticles(@RequestParam String tag, @RequestParam String author, @RequestParam String favorited, @RequestParam(defaultValue="20") int limit, @RequestParam(defaultValue="0")int offset, HttpSession httpSession) {
+		return articleService.listArticles(tag, author, favorited, limit, offset, httpSession);
 	}
 	
 	@PutMapping("/articles/{slug}")
